@@ -74,7 +74,9 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
                 mediaPlayer.reset();
                 initMediaPlayer();
                 buildNotification(PlaybackStatus.PLAYING);
-
+            } else if (mediaPlayer.isPlaying()) {
+                pauseMedia();
+                buildNotification(PlaybackStatus.PAUSED);
             } else {
                 resumeMedia();
                 buildNotification(PlaybackStatus.PLAYING);
@@ -124,7 +126,7 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
             // Set the data source to the url location
-            String url = "http://51.15.152.81:8476/stream.mp3";
+            String url = "http://197.211.34.47:88/broadwavehigh.mp3";
             mediaPlayer.setDataSource(url);
         } catch (IOException e) {
             e.printStackTrace();
@@ -199,6 +201,12 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
         unregisterReceiver(pauseAudio);
     }
 
+    @Override
+    public void onBufferingUpdate(MediaPlayer mp, int percent) {
+
+        Log.d("URL", "Buffering update: " + percent + "%");
+
+    }
     //Handle errors
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -440,11 +448,11 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
                 .setAutoCancel(true)
                 .setSmallIcon(android.R.drawable.ic_media_play)
                 // Set Notification content information
-                .setTicker("You are about to stream Live form Prestige")
-                .setContentTitle("Prestige Radio FM")
+                .setTicker("You are about to stream Live")
+                .setContentTitle("Online Radio FM")
                 .setContentText("You are streaming Live")
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setContentInfo("Music is playing")
+                .setContentInfo("Content is playing")
                 // Add playback actions
                 .addAction(notificationAction, "pause", play_pauseAction);
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
@@ -497,10 +505,10 @@ public class MyService extends Service implements MediaPlayer.OnPreparedListener
         return iBinder;
     }
 
-    @Override
-    public void onBufferingUpdate(MediaPlayer mediaPlayer, int i) {
-
-    }
+//    @Override
+//    public void onBufferingUpdate(MediaPlayer mediaPlayer, int i) {
+//
+//    }
 
     @Override
     public boolean onInfo(MediaPlayer mediaPlayer, int i, int i1) {

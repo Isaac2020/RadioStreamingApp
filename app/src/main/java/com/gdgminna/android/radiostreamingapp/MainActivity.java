@@ -1,8 +1,9 @@
 package com.gdgminna.android.radiostreamingapp;
 
-import android.app.ProgressDialog;
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.ConnectivityManager;
@@ -25,19 +26,18 @@ public class MainActivity extends AppCompatActivity {
     //Binding this Client to the AudioPlayer Service
     Intent playerIntent;
     private ImageButton imageButton;
-    private ProgressDialog progressDialog;
     private boolean playPause = true;
-    //private ProgressDialog progressDialog;
     private boolean initialStage = true;
     private TextView textView;
-    private MyService player;
+    private MyService buildNotification;
+    //private PlaybackStatus playbackStatus;
     //Binding this Client to the Player Service
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             // We've bound to LocalService, cast the IBinder and get LocalService instance
             MyService.LocalBinder binder = (MyService.LocalBinder) service;
-            player = binder.getService();
+            MyService player = binder.getService();
             serviceBound = true;
             Toast.makeText(MainActivity.this, "Service Bound", Toast.LENGTH_SHORT).show();
         }
@@ -54,12 +54,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        checkStatues(PlaybackStatus.PAUSED);
+
 
         textView = findViewById(R.id.textView_play);
         imageButton = findViewById(R.id.audioStreamBtn);
 
-        progressDialog = new ProgressDialog(this);
+
         playerIntent = new Intent(this, MyService.class);
 
 
@@ -77,17 +77,19 @@ public class MainActivity extends AppCompatActivity {
                     if (initialStage) {
                         playAudio();
                         imageButton.setImageResource(R.drawable.ic_pause_black_24dp);
+                        textView.setText("Press the Pause button to Pause streaming");
                         initialStage = false;
                     } else {
                         if (playPause) {
                             imageButton.setImageResource(R.drawable.ic_pause_black_24dp);
-                            textView.setText("Press the pause button to start streaming");
+                            textView.setText("Press the Pause button to Pause streaming");
                             playAudio();
                             playPause = false;
                         } else {
                             imageButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
-                            textView.setText("Press the play button to pause streaming");
-                            pauseAudio();
+                            textView.setText("Press the play button to Resume streaming");
+                            // pauseAudio();
+                            playAudio();
                             playPause = true;
                         }
                     }
@@ -100,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
 
                 } else {
                     imageButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
-                    textView.setText("Press the play button to start streaming");
+                    textView.setText("Press the Play button to start streaming");
                     stopAudio();
 
                 }
@@ -109,27 +111,36 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void checkStatues(PlaybackStatus playbackStatus) {
-        if (playbackStatus == PlaybackStatus.PLAYING) {
+    public void checkStatues() {
+
+
+        if (buildNotification(PlaybackStatus.PLAYING)) {
             imageButton.setImageResource(R.drawable.ic_pause_black_24dp);
-            textView.setText("Press the pause button to start streaming");
-        } else if (playbackStatus == PlaybackStatus.PAUSED) {
+            textView.setText("Press the pause button to Pause streaming");
+        } else if (buildNotification(PlaybackStatus.PAUSED)) {
             imageButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
-            textView.setText("Press the play button to start streaming");
+            textView.setText("Press the play button to Start streaming");
         }
     }
+
+    private boolean buildNotification(PlaybackStatus playing) {
+        return true;
+    }
+
+
 
     @Override
     public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
         super.onSaveInstanceState(outState, outPersistentState);
         outState.putBoolean("serviceStatus", serviceBound);
+        outState.putString("serviceStatus", String.valueOf(textView));
     }
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         serviceBound = savedInstanceState.getBoolean("serviceStatus");
-        checkStatues(PlaybackStatus.PAUSED);
+        checkStatues();
     }
 
     private void playAudio() {
@@ -158,6 +169,32 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
     }
+
+    @Override
+    public void onBackPressed() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Do you wish to Continue playing in the background or Stop playing and Exit?")
+                .setCancelable(false)
+                .setPositiveButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                })
+                .setNeutralButton("Continue", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        MainActivity.this.finish();
+                    }
+                })
+                .setNegativeButton("Stop", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        stopAudio();
+                        MainActivity.this.finish();
+                    }
+                });
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
 
     @Override
     protected void onDestroy() {
